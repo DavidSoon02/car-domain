@@ -8,8 +8,10 @@ class RedisClient {
     async connect() {
         try {
             this.client = redis.createClient({
-                host: process.env.REDIS_HOST,
-                port: process.env.REDIS_PORT
+                socket: {
+                    host: process.env.REDIS_HOST || 'localhost',
+                    port: parseInt(process.env.REDIS_PORT) || 6379
+                }
             });
 
             this.client.on('error', (err) => {
@@ -17,7 +19,7 @@ class RedisClient {
             });
 
             await this.client.connect();
-            console.log('Connected to Redis');
+            console.log(`Connected to Redis at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
         } catch (error) {
             console.error('Redis connection failed:', error);
             throw error;
