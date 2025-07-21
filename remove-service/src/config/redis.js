@@ -3,6 +3,8 @@ const redis = require('redis');
 class RedisClient {
     constructor() {
         this.client = null;
+        this.isConnected = false;
+        this.connect();
     }
 
     async connect() {
@@ -14,20 +16,37 @@ class RedisClient {
                 }
             });
 
+            this.client.on('connect', () => {
+                console.log(`Connected to Redis at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
+                this.isConnected = true;
+            });
+
             this.client.on('error', (err) => {
                 console.error('Redis error:', err);
+                this.isConnected = false;
+            });
+
+            this.client.on('end', () => {
+                console.log('Redis connection ended');
+                this.isConnected = false;
             });
 
             await this.client.connect();
-            console.log(`Connected to Redis at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
         } catch (error) {
             console.error('Redis connection failed:', error);
-            throw error;
+            this.isConnected = false;
         }
     }
 
     getClient() {
         return this.client;
+    }
+
+    async disconnect() {
+        if (this.client) {
+            await this.client.disconnect();
+            this.isConnected = false;
+        }
     }
 }
 

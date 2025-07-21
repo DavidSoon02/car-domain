@@ -7,15 +7,30 @@ const router = express.Router();
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
+        console.log(`Getting cart for user: ${userId}`);
+
         const cart = await cartService.getCart(userId);
 
         res.status(200).json({
+            success: true,
             message: 'Cart retrieved successfully',
-            cart
+            data: cart
         });
     } catch (error) {
         console.error('Error retrieving cart:', error);
-        res.status(500).json({ error: 'Internal server error' });
+
+        if (error.message.includes('Redis connection')) {
+            return res.status(503).json({
+                success: false,
+                error: 'Cart service temporarily unavailable. Please try again later.',
+                data: { items: [], total: 0, itemCount: 0 }
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
     }
 });
 
@@ -27,16 +42,31 @@ router.get('/item/:productId', authMiddleware, async (req, res) => {
         const item = await cartService.getCartItem(userId, productId);
 
         if (!item) {
-            return res.status(404).json({ error: 'Item not found in cart' });
+            return res.status(404).json({
+                success: false,
+                error: 'Item not found in cart'
+            });
         }
 
         res.status(200).json({
-            message: 'Item retrieved successfully',
-            item
+            success: true,
+            message: 'Cart item retrieved successfully',
+            data: item
         });
     } catch (error) {
         console.error('Error retrieving cart item:', error);
-        res.status(500).json({ error: 'Internal server error' });
+
+        if (error.message.includes('Redis connection')) {
+            return res.status(503).json({
+                success: false,
+                error: 'Cart service temporarily unavailable. Please try again later.'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
     }
 });
 
